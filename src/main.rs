@@ -42,13 +42,13 @@ fn embiggen<'a>(input: &'a str) -> String {
 }
 
 fn main() {
-    let args = env::args();
-    let inner: Vec<_> = args.map(|x| &x[..]).collect();
+    let args: Vec<_> = env::args().collect();
+    let inner: Vec<_> = args.iter().map(|x| x.as_str()).collect();
     let f = match &inner[..] {
-        &["spongebob"] => {
+        &[_, "spongebob"] => {
             spongebob
         },
-        &["embiggen"] => {
+        &[_, "embiggen"] => {
             embiggen
         },
         _ => {
