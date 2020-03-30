@@ -43,6 +43,7 @@ fn embiggen<'a>(input: &'a str) -> String {
 
 fn main() {
     let args: Vec<_> = env::args().collect();
+    let this = &args[0];
     let inner: Vec<_> = args.iter().map(|x| x.as_str()).collect();
     let f = match &inner[..] {
         &[_, "spongebob"] => {
@@ -52,7 +53,10 @@ fn main() {
             embiggen
         },
         _ => {
-            println!("Usage: $0 spongebob|embiggen");
+            println!("Usage: {} <meme>", this);
+            println!("Included memes:");
+            println!("  spongebob");
+            println!("  embiggen");
             return
         },
     };
