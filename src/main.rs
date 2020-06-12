@@ -1,7 +1,9 @@
 use std::env;
+use std::process::{Command, Stdio};
 use std::io::{
     self,
     BufRead,
+    Write,
 };
 
 use rand::{
@@ -41,6 +43,47 @@ fn embiggen<'a>(input: &'a str) -> String {
     apply_meme(&input, |c| { Some(format!(":big-{}:", c)) })
 }
 
+trait Sink {
+    fn sink<'a>(&self, line: &'a str);
+}
+
+struct StdoutSink;
+
+impl Sink for StdoutSink {
+    #[cfg(target_os = "macos")]
+    fn sink<'a>(&self, line: &'a str) {
+        println!("{}", line);
+    }
+}
+
+struct ClipboardSink;
+
+impl Sink for ClipboardSink {
+    fn sink<'a>(&self, line: &'a str) {
+        let child = Command::new("pbcopy")
+            .stdin(Stdio::piped())
+            .spawn()
+            .expect("failed to execute process");
+        child.stdin.expect("Couldn't get child stdin").write_all(line.as_bytes())
+            .expect("couldn't write to child");
+    }
+}
+
+fn get_sink() -> Box<dyn Sink> {
+    match env::var("MANGLR_SINK").ok() {
+        Some(ref s) if s == "clipboard" => {
+            Box::new(ClipboardSink)
+        },
+        None => {
+            Box::new(StdoutSink)
+        },
+        Some(other) => {
+            panic!("Unknown sink: {}", other)
+        },
+    }
+}
+
+
 fn main() {
     let args: Vec<_> = env::args().collect();
     let this = &args[0];
@@ -61,9 +104,11 @@ fn main() {
         },
     };
 
+    let sink = get_sink();
+
     for line in io::stdin().lock().lines() {
         if let Ok(line) = line {
-            println!("{}", f(&line));
+            sink.sink(&f(&line));
         }
     }
 }
